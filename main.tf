@@ -1,107 +1,95 @@
 terraform {
   required_providers {
     docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 2.0"
+      source = "kreuzwerker/docker"
+      version = "~> 3.0.1"
     }
   }
 }
 
-# Proveedor Docker
 provider "docker" {
-  host = "unix:///var/run/docker.sock" # Ruta al socket de Docker
+  host = "npipe:////.//pipe//docker_engine"  # Para Windows
 }
 
-# Red Docker
+# Crear una red de Docker para Jenkins
 resource "docker_network" "jenkins_network" {
-  name = "jenkins" # Nombre de la red
+  name = "jenkins"
 }
 
-# Imagen Docker in Docker (DinD)
-resource "docker_image" "dind" {
-  name = "docker:dind" # Imagen oficial de DinD
-}
-
-# Imagen personalizada de Jenkins
-resource "docker_image" "jenkins" {
-  name = "myjenkins-blueocean" # Nombre de la imagen personalizada
-
-  # Construcción de la imagen personalizada
+# Construir la imagen personalizada de Jenkins desde el Dockerfile
+resource "docker_image" "jenkins_blueocean_image" {
+  name         = "myjenkins-blueocean"
   build {
-    context    = "./jenkins"      # Carpeta donde está el Dockerfile
-    dockerfile = "Dockerfile"     # Nombre del Dockerfile
+    context    = "."
+    dockerfile = "Dockerfile"
   }
 }
-
-# Contenedor Docker in Docker (DinD)
-resource "docker_container" "dind" {
+# Contenedor para Jenkins Docker-in-Docker (DIND)
+resource "docker_container" "jenkins_docker" {
   name  = "jenkins-docker"
-  image = docker_image.dind.latest # Imagen creada anteriormente
+  image = "docker:dind"
 
-  privileged = true # Permite al contenedor usar características avanzadas
-
+  privileged = true
+  restart    = "no"
   networks_advanced {
-    name    = docker_network.jenkins_network.name # Conecta a la red
-    aliases = ["docker"]                          # Alias en la red
+    name = docker_network.jenkins_network.name
+    aliases = ["docker"]
   }
 
-  # Variables de entorno
   env = [
     "DOCKER_TLS_CERTDIR=/certs"
   ]
 
-  # Montaje de volúmenes
   volumes {
-    host_path      = "jenkins-docker-certs"
+    host_path      = "C:/docker/jenkins-docker-certs"  # Ruta absoluta en Windows
     container_path = "/certs/client"
   }
+
   volumes {
-    host_path      = "jenkins-data"
+    host_path      = "C:/docker/jenkins-data"  # Ruta absoluta en Windows
     container_path = "/var/jenkins_home"
   }
 
-  # Puertos expuestos
   ports {
-    internal = 2376 # Puerto interno
-    external = 2376 # Puerto expuesto
+    internal = 2376
+    external = 2376
   }
 }
 
-# Contenedor Jenkins personalizado
-resource "docker_container" "jenkins" {
+# Contenedor para Jenkins Blue Ocean
+resource "docker_container" "jenkins_blueocean" {
   name  = "jenkins-blueocean"
-  image = docker_image.jenkins.latest # Imagen personalizada de Jenkins
+  image = docker_image.jenkins_blueocean_image.name
 
-  restart = "on-failure" # Reinicia si falla
-
+  restart = "on-failure"
   networks_advanced {
-    name = docker_network.jenkins_network.name # Conecta a la red
+    name = docker_network.jenkins_network.name
   }
 
-  # Variables de entorno
   env = [
-    "DOCKER_HOST=tcp://docker:2376",       # Dirección del demonio Docker
-    "DOCKER_CERT_PATH=/certs/client",      # Ruta de los certificados
-    "DOCKER_TLS_VERIFY=1"                  # Activa verificación TLS
+    "DOCKER_HOST=tcp://docker:2376",
+    "DOCKER_CERT_PATH=/certs/client",
+    "DOCKER_TLS_VERIFY=1"
   ]
 
-  # Montaje de volúmenes
   volumes {
-    host_path      = "jenkins-data"
+    host_path      = "C:/docker/jenkins-data"  # Ruta absoluta en Windows
     container_path = "/var/jenkins_home"
   }
+
   volumes {
-    host_path      = "jenkins-docker-certs"
-    container_path = "/certs/client:ro" # Solo lectura
+    host_path      = "C:/docker/jenkins-docker-certs"  # Ruta absoluta en Windows
+    container_path = "/certs/client"
+    read_only      = true
   }
 
-  # Puertos expuestos
   ports {
-    internal = 8080 # Puerto interno HTTP
-    external = 8080 # Puerto expuesto HTTP
+    internal = 8080
+    external = 8080
   }
+
   ports {
-    internal = 50000 # Puerto interno para agentes Jenkins
-    external = 50000 # Puerto expuesto para agentes Jenkins
+    internal = 50000
+    external = 50000
   }
 }
