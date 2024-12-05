@@ -19,3 +19,4 @@ USER jenkins
 
 # Instalar plugins de Jenkins
 RUN jenkins-plugin-cli --plugins "blueocean docker-workflow token-macro json-path-api"
+

@@ -16,14 +16,11 @@ resource "docker_network" "jenkins_network" {
   name = "jenkins"
 }
 
-# Construir la imagen personalizada de Jenkins desde el Dockerfile
+# Referencia directa a la imagen ya construida
 resource "docker_image" "jenkins_blueocean_image" {
-  name         = "myjenkins-blueocean"
-  build {
-    context    = "."
-    dockerfile = "Dockerfile"
-  }
+  name = "myjenkins-blueocean"
 }
+
 # Contenedor para Jenkins Docker-in-Docker (DIND)
 resource "docker_container" "jenkins_docker" {
   name  = "jenkins-docker"
