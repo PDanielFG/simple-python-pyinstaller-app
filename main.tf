@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 2.0"
+    }
+  }
+}
+
 # Proveedor Docker
 provider "docker" {
   host = "unix:///var/run/docker.sock" # Ruta al socket de Docker
