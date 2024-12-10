@@ -32,6 +32,8 @@ resource "docker_container" "jenkins_docker" {
 
   networks_advanced {
     name = docker_network.jenkins.name
+    aliases = ["docker"]
+
   }
 
   volumes {
@@ -42,6 +44,8 @@ resource "docker_container" "jenkins_docker" {
   volumes {
     volume_name    = docker_volume.jenkins_certs.name
     container_path = "/certs/client"
+    read_only      = true
+
   }
 
   ports {
