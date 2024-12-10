@@ -66,6 +66,8 @@ resource "docker_container" "jenkins_blueocean" {
 
   networks_advanced {
     name = docker_network.jenkins.name
+    aliases = ["docker"]
+
   }
 
   ports {
