@@ -1,47 +1,60 @@
 pipeline {
-    agent none
+    agent none      //cada stage especifica su propio agente
     options {
-        skipStagesAfterUnstable()
+        skipStagesAfterUnstable()   //Si una etapa es inestable las sigientes etapas se omiten
     }
     stages {
+        //Etapa build, se compila el codigo python comprobando que no tenga errores sintácticos, 
+        //lo almacena para usarlo en las siguientes etapas
         stage('Build') {
             agent {
                 docker {
-                    image 'python:3.12.0-alpine3.18'
+                    image 'python:3.12.0-alpine3.18'    //Imagen de docker con python 3.12 en alpine linux
                 }
             }
+            //son los pasos que jenkins debe ejecutar en una etapa, las instruccinoes correspondientes a cada stage
+            //usando la shell
             steps {
                 sh 'python -m py_compile sources/add2vals.py sources/calc.py'
                 stash(name: 'compiled-results', includes: 'sources/*.py*')
             }
         }
+        //etapa Test, herramienta de python para escribir y ejecutar pruebas sobre lo que tenemos de la etapa anteriors
         stage('Test') {
             agent {
                 docker {
-                    image 'qnib/pytest'
+                    image 'qnib/pytest'     //imagen de docker con pytest instalado
                 }
             }
+            //Ejecuta el archivo de pruebas unitarias test_calc.py del directorio source y guarda el resultado 
+            //en fomato jUnit XML en el archivo reports/results.xml
             steps {
                 sh 'py.test --junit-xml test-reports/results.xml sources/test_calc.py'
             }
+            //Publica el archivo con los resultados XML en Jenkins para visualizar los mensajes de error
             post {
                 always {
                     junit 'test-reports/results.xml'
                 }
             }
         }
+        //etapa Deliver,  se generan y entregan los artefactos finales del proyecto. En este caso, el objetivo es 
+        //empaquetar el archivo add2vals.py como un ejecutable independiente utilizando PyInstaller y archivarlo para 
+        //su distribución
         stage('Deliver') {
             agent any
-            environment {
+            environment {   //volumen de docker que el monta el direcotiro local sources como /src dentro del conetnedor
                 VOLUME = '$(pwd)/sources:/src'
-                IMAGE = 'cdrx/pyinstaller-linux:python2'
+                IMAGE = 'cdrx/pyinstaller-linux:python2'    //Usa una imagen Docker que incluye pyinstaller para empaquetar el código Python en un binario ejecutable.
             }
+            //Empaquetado de proyecto usando la imagen de pyinstaller 
             steps {
                 dir(path: env.BUILD_ID) {
                     unstash(name: 'compiled-results')
                     sh "docker run --rm -v ${VOLUME} ${IMAGE} 'pyinstaller -F add2vals.py'"
                 }
             }
+            //Si funciona guarda el artefacto en jenkins, para poder descargarlo
             post {
                 success {
                     archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals"
