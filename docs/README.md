@@ -1,6 +1,6 @@
 # Entregable 3. Terraform, SCV, Jenkins.
 
--Una vez hacemos Fork al repositorio correspondiente, clonamos el repositorio remoto a un nuestro repositorio local (directorio/carpeta) con el comando __git clone \<url del repositorio remoto\>__
+- Una vez hacemos Fork al repositorio correspondiente, clonamos el repositorio remoto a un nuestro repositorio local (directorio/carpeta) con el comando __git clone \<url del repositorio remoto\>__
 
 -Creamos la rama main usando el siguiente comando de git bash: __git branch main__ y nos situamos en ella para trabajar con el comando: 
 __git checkout main__ para actualizar los cambios en el repositorio remoto los publicamos directamente con el comando: __git push origin main__
